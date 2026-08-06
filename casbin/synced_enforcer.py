@@ -35,6 +35,112 @@ class AtomicBool:
             self._value = value
 
 
+class _DeferredNotifier:
+    """Queues the watcher notifications raised inside a locked section and delivers them
+    once the lock has been released.
+
+    Watchers have a lock of their own, and some of them (the redis watcher, for one) hold
+    it while running the update callback, which calls back into the enforcer to reload the
+    policy. Notifying from inside the enforcer lock would let the two threads take those
+    two locks in opposite orders and deadlock:
+    https://github.com/casbin/pycasbin/issues/408
+    """
+
+    def __init__(self):
+        self._local = threading.local()
+
+    def _stack(self):
+        stack = getattr(self._local, "stack", None)
+        if stack is None:
+            stack = []
+            self._local.stack = stack
+        return stack
+
+    def defer(self, func, args, kwargs):
+        """queues a call, and returns whether it was queued. False means no lock is held
+        by this thread, so the caller has to run the call itself."""
+        stack = self._stack()
+        if not stack:
+            return False
+        stack[-1].append((func, args, kwargs))
+        return True
+
+    def begin(self):
+        """starts collecting, called right after the lock has been taken."""
+        self._stack().append([])
+
+    def end(self, suppress_errors=False):
+        """delivers what was collected, called right after the lock has been released."""
+        stack = self._stack()
+        queued = stack.pop()
+        if stack:
+            # an outer lock is still held, so hand the calls over to it
+            stack[-1].extend(queued)
+            return
+
+        for func, args, kwargs in queued:
+            try:
+                func(*args, **kwargs)
+            except Exception:
+                # the caller is already unwinding an exception of its own, and hiding it
+                # behind a notification failure would only make the original harder to find
+                if not suppress_errors:
+                    raise
+
+
+class _NotifyAfterUnlock:
+    """wraps one of the enforcer locks so that _DeferredNotifier collects notifications
+    for as long as the lock is held."""
+
+    def __init__(self, lock, notifier):
+        self._lock = lock
+        self._notifier = notifier
+
+    def __enter__(self):
+        self._lock.__enter__()
+        self._notifier.begin()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        try:
+            self._lock.__exit__(exc_type, exc_value, traceback)
+        finally:
+            self._notifier.end(suppress_errors=exc_type is not None)
+        return False
+
+
+class _DeferredWatcher:
+    """stands in for the user's watcher on the wrapped enforcer, and routes every call it
+    makes through a _DeferredNotifier."""
+
+    def __init__(self, watcher, notifier):
+        self._watcher = watcher
+        self._notifier = notifier
+
+    def __bool__(self):
+        return bool(self._watcher)
+
+    def __getattr__(self, name):
+        watcher = self.__dict__.get("_watcher")
+        if watcher is None:
+            raise AttributeError(name)
+
+        attr = getattr(watcher, name)
+        if not callable(attr):
+            return attr
+
+        notifier = self._notifier
+
+        def deferred(*args, **kwargs):
+            # a deferred call has no result to hand back yet, but the enforcer ignores
+            # what the watcher returns anyway
+            if notifier.defer(attr, args, kwargs):
+                return None
+            return attr(*args, **kwargs)
+
+        return deferred
+
+
 class SyncedEnforcer:
     """SyncedEnforcer wraps Enforcer and provides synchronized access.
     It's also a drop-in replacement for Enforcer"""
@@ -42,8 +148,10 @@ class SyncedEnforcer:
     def __init__(self, model=None, adapter=None):
         self._e = self._new_enforcer(model, adapter)
         self._rwlock = RWLockWrite()
-        self._rl = self._rwlock.gen_rlock()
-        self._wl = self._rwlock.gen_wlock()
+        self._notifier = _DeferredNotifier()
+        self._rl = _NotifyAfterUnlock(self._rwlock.gen_rlock(), self._notifier)
+        self._wl = _NotifyAfterUnlock(self._rwlock.gen_wlock(), self._notifier)
+        self._watcher = None
         self._auto_loading = AtomicBool(False)
         self._auto_loading_thread = None
 
@@ -115,9 +223,19 @@ class SyncedEnforcer:
             self._e.set_adapter(adapter)
 
     def set_watcher(self, watcher):
-        """sets the current watcher."""
+        """sets the current watcher.
+
+        It is notified only once the enforcer lock has been released, so a watcher that
+        holds a lock of its own while running the update callback cannot deadlock against
+        the enforcer."""
         with self._wl:
-            self._e.set_watcher(watcher)
+            self._watcher = watcher
+            self._e.set_watcher(None if watcher is None else _DeferredWatcher(watcher, self._notifier))
+
+    def get_watcher(self):
+        """gets the watcher that was passed to set_watcher()."""
+        with self._rl:
+            return self._watcher
 
     def set_effector(self, eft):
         """sets the current effector."""
