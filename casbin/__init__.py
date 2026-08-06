@@ -17,6 +17,10 @@ from .synced_enforcer import SyncedEnforcer
 from .distributed_enforcer import DistributedEnforcer
 from .fast_enforcer import FastEnforcer
 from .async_enforcer import AsyncEnforcer
+from .cached_enforcer import CachedEnforcer
+from .synced_cached_enforcer import SyncedCachedEnforcer
+from .async_cached_enforcer import AsyncCachedEnforcer
+from .cache import Cache, DefaultCache
 from . import util
 from .persist import *
 from .effect import *

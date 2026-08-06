@@ -40,12 +40,18 @@ class SyncedEnforcer:
     It's also a drop-in replacement for Enforcer"""
 
     def __init__(self, model=None, adapter=None):
-        self._e = Enforcer(model, adapter)
+        self._e = self._new_enforcer(model, adapter)
         self._rwlock = RWLockWrite()
         self._rl = self._rwlock.gen_rlock()
         self._wl = self._rwlock.gen_wlock()
         self._auto_loading = AtomicBool(False)
         self._auto_loading_thread = None
+
+    @staticmethod
+    def _new_enforcer(model, adapter):
+        """builds the enforcer this wrapper guards. Subclasses override it to wrap a
+        different one without duplicating the constructor."""
+        return Enforcer(model, adapter)
 
     def is_auto_loading_running(self):
         """check if SyncedEnforcer is auto loading policies"""

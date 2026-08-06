@@ -36,6 +36,10 @@ class EnforceContext:
         self.etype: str = etype
         self.mtype: str = mtype
 
+    def get_cache_key(self):
+        """lets CachedEnforcer key a request that carries an EnforceContext."""
+        return self.rtype, self.ptype, self.etype, self.mtype
+
 
 class CoreEnforcer:
     """CoreEnforcer defines the core functionality of an enforcer."""
