@@ -28,7 +28,7 @@ class AsyncEnforcer(AsyncManagementEnforcer):
         return self.model.model["g"]["g"].rm.get_roles(name)
 
     async def get_users_for_role(self, name):
-        """gets the users that has a role."""
+        """gets the users that have a role."""
         return self.model.model["g"]["g"].rm.get_users(name)
 
     async def has_role_for_user(self, name, role):
@@ -233,7 +233,7 @@ class AsyncEnforcer(AsyncManagementEnforcer):
         return self.model.model["g"]["g"].rm.get_roles(name, domain)
 
     async def get_users_for_role_in_domain(self, name, domain):
-        """gets the users that has a role inside a domain."""
+        """gets the users that have a role inside a domain."""
         return self.model.model["g"]["g"].rm.get_users(name, domain)
 
     async def add_role_for_user_in_domain(self, user, role, domain):

@@ -473,7 +473,7 @@ class SyncedEnforcer:
             return self._e.get_roles_for_user(name)
 
     def get_users_for_role(self, name):
-        """gets the users that has a role."""
+        """gets the users that have a role."""
         with self._rl:
             return self._e.get_users_for_role(name)
 
@@ -634,7 +634,7 @@ class SyncedEnforcer:
             return self._e.get_roles_for_user_in_domain(name, domain)
 
     def get_users_for_role_in_domain(self, name, domain):
-        """gets the users that has a role inside a domain."""
+        """gets the users that have a role inside a domain."""
         with self._rl:
             return self._e.get_users_for_role_in_domain(name, domain)
 
