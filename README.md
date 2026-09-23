@@ -54,14 +54,14 @@ Casbin is a powerful and efficient open-source access control library for Python
 1. [**ACL (Access Control List)**](https://en.wikipedia.org/wiki/Access_control_list)
 2. **ACL with [superuser](https://en.wikipedia.org/wiki/Superuser)**
 3. **ACL without users**: especially useful for systems that don't have authentication or user log-ins.
-3. **ACL without resources**: some scenarios may target for a type of resources instead of an individual resource by using permissions like ``write-article``, ``read-log``. It doesn't control the access to a specific article or log.
-4. **[RBAC (Role-Based Access Control)](https://en.wikipedia.org/wiki/Role-based_access_control)**
-5. **RBAC with resource roles**: both users and resources can have roles (or groups) at the same time.
-6. **RBAC with domains/tenants**: users can have different role sets for different domains/tenants.
-7. **[ABAC (Attribute-Based Access Control)](https://en.wikipedia.org/wiki/Attribute-Based_Access_Control)**: syntax sugar like ``resource.Owner`` can be used to get the attribute for a resource.
-8. **[RESTful](https://en.wikipedia.org/wiki/Representational_state_transfer)**: supports paths like ``/res/*``, ``/res/:id`` and HTTP methods like ``GET``, ``POST``, ``PUT``, ``DELETE``.
-9. **Deny-override**: both allow and deny authorizations are supported, deny overrides the allow.
-10. **Priority**: the policy rules can be prioritized like firewall rules.
+4. **ACL without resources**: some scenarios may target for a type of resources instead of an individual resource by using permissions like ``write-article``, ``read-log``. It doesn't control the access to a specific article or log.
+5. **[RBAC (Role-Based Access Control)](https://en.wikipedia.org/wiki/Role-based_access_control)**
+6. **RBAC with resource roles**: both users and resources can have roles (or groups) at the same time.
+7. **RBAC with domains/tenants**: users can have different role sets for different domains/tenants.
+8. **[ABAC (Attribute-Based Access Control)](https://en.wikipedia.org/wiki/Attribute-Based_Access_Control)**: syntax sugar like ``resource.Owner`` can be used to get the attribute for a resource.
+9. **[RESTful](https://en.wikipedia.org/wiki/Representational_state_transfer)**: supports paths like ``/res/*``, ``/res/:id`` and HTTP methods like ``GET``, ``POST``, ``PUT``, ``DELETE``.
+10. **Deny-override**: both allow and deny authorizations are supported, deny overrides the allow.
+11. **Priority**: the policy rules can be prioritized like firewall rules.
 
 ## How it works?
 
@@ -100,16 +100,16 @@ It means:
 - alice can read data1
 - bob can write data2
 
-We also support multi-line mode by appending '\\'  in the end:  
+We also support multi-line mode by appending '\\' at the end:
 
 ```ini
 # Matchers
 [matchers]
-m = r.sub == p.sub && r.obj == p.obj \ 
+m = r.sub == p.sub && r.obj == p.obj \
   && r.act == p.act
 ```
 
-Further more, if you are using ABAC,  you can try operator `in` like following in Casbin **golang** edition (jCasbin and Node-Casbin are not supported yet):
+Furthermore, if you are using ABAC, you can use the `in` operator like the following:
 
 ```ini
 # Matchers
@@ -117,9 +117,9 @@ Further more, if you are using ABAC,  you can try operator `in` like following i
 m = r.obj == p.obj && r.act == p.act || r.obj in ('data2', 'data3')
 ```
 
-But you **SHOULD** make sure that the length of the array is **MORE** than **1**, otherwise there will cause it to panic.
+Note: the right-hand side is a normal Python tuple, so a single-element one **MUST** keep its trailing comma, e.g. ``('data2',)``. Writing ``('data2')`` makes it a plain string, and ``in`` then silently degrades to a substring match (``data`` would match ``data2``).
 
-For more operators, you may take a look at [govaluate](https://github.com/Knetic/govaluate)
+For more operators, you may take a look at [simpleeval](https://github.com/danthedeckie/simpleeval), the expression engine used by pycasbin.
 
 ## Features
 
@@ -128,7 +128,7 @@ What Casbin does:
 1. enforce the policy in the classic ``{subject, object, action}`` form or a customized form as you defined, both allow and deny authorizations are supported.
 2. handle the storage of the access control model and its policy.
 3. manage the role-user mappings and role-role mappings (aka role hierarchy in RBAC).
-4. support built-in superuser like ``root`` or ``administrator``. A superuser can do anything without explict permissions.
+4. support built-in superuser like ``root`` or ``administrator``. A superuser can do anything without explicit permissions.
 5. multiple built-in operators to support the rule matching. For example, ``keyMatch`` can map a resource key ``/foo/bar`` to the pattern ``/foo*``.
 
 What Casbin does NOT do:
@@ -180,7 +180,7 @@ else:
     pass
 ```
 
-3. Besides the static policy file, Casbin also provides API for permission management at run-time. For example, You can get all the roles assigned to a user as below:
+3. Besides the static policy file, Casbin also provides API for permission management at run-time. For example, you can get all the roles assigned to a user as below:
 
 ```python
 roles = e.get_roles_for_user("alice")
@@ -213,7 +213,7 @@ https://casbin.org/docs/role-managers
 
 ## Async Enforcer
 
-If your code use `async` / `await` and is heavily dependent on I/O operations, you can adopt Async Enforcer!
+If your code uses `async` / `await` and is heavily dependent on I/O operations, you can adopt Async Enforcer!
 
 1. Create an async engine and new a Casbin AsyncEnforcer with a model file and an async Pycasbin adapter (AsyncAdapter subclass):
 
@@ -276,22 +276,22 @@ https://casbin.org/docs/benchmark
 
 ## Logging
 
-pycasbin leverages the default Python logging mechanism. The pycasbin package makes a call to `logging.getLogger()` to set the logger. No special logging configuration is needed other than initializing the logger in the parent application. If no logging is initialized within the parent application, you will not see any log messages from pycasbin. At the same time, When you enable log in pycasbin, you can specify the logging configuration through the parameter `logging_config`. If no configuration is specified, it will use the [default log configuration](https://github.com/apache/casbin-pycasbin/blob/c33cabfa0ac65cd09cf812a65e71794d64cb5132/casbin/util/log.py#L6C1-L6C1). For other pycasbin extensions, you can refer to the [Django logging docs](https://docs.djangoproject.com/en/4.2/topics/logging/) if you are a Django user. For other Python users, you should refer to the [Python logging docs](https://docs.python.org/3/library/logging.config.html) to configure the logger.
+pycasbin leverages the default Python logging mechanism. The pycasbin package makes a call to `logging.getLogger()` to set the logger. No special logging configuration is needed other than initializing the logger in the parent application. If no logging is initialized within the parent application, you will not see any log messages from pycasbin. At the same time, when you enable log in pycasbin, you can specify the logging configuration through the parameter `logging_config`. If no configuration is specified, it will use the [default log configuration](https://github.com/apache/casbin-pycasbin/blob/c33cabfa0ac65cd09cf812a65e71794d64cb5132/casbin/util/log.py#L6C1-L6C1). For other pycasbin extensions, you can refer to the [Django logging docs](https://docs.djangoproject.com/en/4.2/topics/logging/) if you are a Django user. For other Python users, you should refer to the [Python logging docs](https://docs.python.org/3/library/logging.config.html) to configure the logger.
 
 ## Examples
 
 | Model                     | Model file                                                                                                                       | Policy file                                                                                                                      |
 |---------------------------|----------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|
 | ACL                       | [basic_model.conf](https://github.com/casbin/casbin/blob/master/examples/basic_model.conf)                                       | [basic_policy.csv](https://github.com/casbin/casbin/blob/master/examples/basic_policy.csv)                                       |
-| ACL with superuser        | [basic_model_with_root.conf](https://github.com/casbin/casbin/blob/master/examples/basic_with_root_model.conf)                   | [basic_policy.csv](https://github.com/casbin/casbin/blob/master/examples/basic_policy.csv)                                       |
-| ACL without users         | [basic_model_without_users.conf](https://github.com/casbin/casbin/blob/master/examples/basic_without_users_model.conf)           | [basic_policy_without_users.csv](https://github.com/casbin/casbin/blob/master/examples/basic_without_users_policy.csv)           |
-| ACL without resources     | [basic_model_without_resources.conf](https://github.com/casbin/casbin/blob/master/examples/basic_without_resources_model.conf)   | [basic_policy_without_resources.csv](https://github.com/casbin/casbin/blob/master/examples/basic_without_resources_policy.csv)   |
+| ACL with superuser        | [basic_with_root_model.conf](https://github.com/casbin/casbin/blob/master/examples/basic_with_root_model.conf)                   | [basic_policy.csv](https://github.com/casbin/casbin/blob/master/examples/basic_policy.csv)                                       |
+| ACL without users         | [basic_without_users_model.conf](https://github.com/casbin/casbin/blob/master/examples/basic_without_users_model.conf)           | [basic_without_users_policy.csv](https://github.com/casbin/casbin/blob/master/examples/basic_without_users_policy.csv)           |
+| ACL without resources     | [basic_without_resources_model.conf](https://github.com/casbin/casbin/blob/master/examples/basic_without_resources_model.conf)   | [basic_without_resources_policy.csv](https://github.com/casbin/casbin/blob/master/examples/basic_without_resources_policy.csv)   |
 | RBAC                      | [rbac_model.conf](https://github.com/casbin/casbin/blob/master/examples/rbac_model.conf)                                         | [rbac_policy.csv](https://github.com/casbin/casbin/blob/master/examples/rbac_policy.csv)                                         |
-| RBAC with resource roles  | [rbac_model_with_resource_roles.conf](https://github.com/casbin/casbin/blob/master/examples/rbac_with_resource_roles_model.conf) | [rbac_policy_with_resource_roles.csv](https://github.com/casbin/casbin/blob/master/examples/rbac_with_resource_roles_policy.csv) |
-| RBAC with domains/tenants | [rbac_model_with_domains.conf](https://github.com/casbin/casbin/blob/master/examples/rbac_with_domains_model.conf)               | [rbac_policy_with_domains.csv](https://github.com/casbin/casbin/blob/master/examples/rbac_with_domains_policy.csv)               |
+| RBAC with resource roles  | [rbac_with_resource_roles_model.conf](https://github.com/casbin/casbin/blob/master/examples/rbac_with_resource_roles_model.conf) | [rbac_with_resource_roles_policy.csv](https://github.com/casbin/casbin/blob/master/examples/rbac_with_resource_roles_policy.csv) |
+| RBAC with domains/tenants | [rbac_with_domains_model.conf](https://github.com/casbin/casbin/blob/master/examples/rbac_with_domains_model.conf)               | [rbac_with_domains_policy.csv](https://github.com/casbin/casbin/blob/master/examples/rbac_with_domains_policy.csv)               |
 | ABAC                      | [abac_model.conf](https://github.com/casbin/casbin/blob/master/examples/abac_model.conf)                                         | N/A                                                                                                                              |
 | RESTful                   | [keymatch_model.conf](https://github.com/casbin/casbin/blob/master/examples/keymatch_model.conf)                                 | [keymatch_policy.csv](https://github.com/casbin/casbin/blob/master/examples/keymatch_policy.csv)                                 |
-| Deny-override             | [rbac_model_with_deny.conf](https://github.com/casbin/casbin/blob/master/examples/rbac_with_deny_model.conf)                     | [rbac_policy_with_deny.csv](https://github.com/casbin/casbin/blob/master/examples/rbac_with_deny_policy.csv)                     |
+| Deny-override             | [rbac_with_deny_model.conf](https://github.com/casbin/casbin/blob/master/examples/rbac_with_deny_model.conf)                     | [rbac_with_deny_policy.csv](https://github.com/casbin/casbin/blob/master/examples/rbac_with_deny_policy.csv)                     |
 | Priority                  | [priority_model.conf](https://github.com/casbin/casbin/blob/master/examples/priority_model.conf)                                 | [priority_policy.csv](https://github.com/casbin/casbin/blob/master/examples/priority_policy.csv)                                 |
 
 ## Middlewares

@@ -287,7 +287,7 @@ class TestConfig(TestCaseBase):
         self.assertTrue(e.enforce("bob", "data2", "write"))
         self.assertTrue(e.enforce("alice", "data2", "read"))
         self.assertTrue(e.enforce("alice", "data2", "write"))
-        self.assertFalse(e.enforce("bogus", "data2", "write"))  # test non-existant subject
+        self.assertFalse(e.enforce("bogus", "data2", "write"))  # test non-existent subject
 
     def test_enforce_rbac_empty_policy(self):
         e = self.get_enforcer(get_examples("rbac_model.conf"), get_examples("empty_policy.csv"))
@@ -883,7 +883,7 @@ class TestConfigAsync(IsolatedAsyncioTestCase):
         self.assertTrue(e.enforce("bob", "data2", "write"))
         self.assertTrue(e.enforce("alice", "data2", "read"))
         self.assertTrue(e.enforce("alice", "data2", "write"))
-        self.assertFalse(e.enforce("bogus", "data2", "write"))  # test non-existant subject
+        self.assertFalse(e.enforce("bogus", "data2", "write"))  # test non-existent subject
 
     async def test_enforce_rbac_empty_policy(self):
         e = self.get_enforcer(get_examples("rbac_model.conf"), get_examples("empty_policy.csv"))
